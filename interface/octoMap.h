@@ -7,11 +7,11 @@
 // for weak platform
 typedef uint16_t setIndex_t;
 
-#ifdef CRAZYFLIE    
-    // 弱平台
-    #define NODE_SET_SIZE 4096
+#ifdef CRAZYFLIE
+// 弱平台
+#define NODE_SET_SIZE 4096
 #else
-    #define NODE_SET_SIZE 4096*4
+#define NODE_SET_SIZE 4096 * 4
 #endif
 
 #define BOOL uint16_t
@@ -44,53 +44,53 @@ typedef struct
 
 // OctoNode
 #ifdef CRAZYFLIE
-    // 弱平台
-    typedef struct
-    {
-        uint16_t children : 12 ; // first child node index (the following 7 children are in order, rft, rbt, lbt, lft, rfn, rbn, lbn, lfn)
-        uint16_t logOdds : 3 ;   // occupation probability level
-        uint16_t isLeaf : 1 ;    // whether is leaf node
-    }
+// 弱平台
+typedef struct
+{
+    uint16_t children : 12; // first child node index (the following 7 children are in order, rft, rbt, lbt, lft, rfn, rbn, lbn, lfn)
+    uint16_t logOdds : 3;   // occupation probability level
+    uint16_t isLeaf : 1;    // whether is leaf node
+}
 #else
-    typedef struct
-    {
-        uint16_t children ; // first child node index (the following 7 children are in order, rft, rbt, lbt, lft, rfn, rbn, lbn, lfn)
-        uint16_t logOdds ;   // occupation probability level
-        uint16_t isLeaf ;    // whether is leaf node
-        coordinate_t origin;    // origin coordinate of the voxel node
-        uint16_t width;
-        uint8_t uav_id;
-    } octoNode_t;
+typedef struct
+{
+    uint16_t children;   // first child node index (the following 7 children are in order, rft, rbt, lbt, lft, rfn, rbn, lbn, lfn)
+    uint16_t logOdds;    // occupation probability level
+    uint16_t isLeaf;     // whether is leaf node
+    coordinate_t origin; // origin coordinate of the voxel node
+    uint16_t width;
+    uint8_t uav_id;
+} octoNode_t;
 #endif
 
 // OctoNodeSet
 typedef struct
 {
     octoNode_t data[8]; // data of the item
-    setIndex_t next; // next item index
+    setIndex_t next;    // next item index
 } octoNodeSetItem_t;
 
 typedef struct
 {
-    octoNodeSetItem_t setData[NODE_SET_SIZE];     // data set
-    setIndex_t freeQueueEntry;                    // first free item index
-    setIndex_t fullQueueEntry;                    // first full item index
-    short numOccupied;  // number of occupied nodes
-    short numFree;  // number of free nodes
-    short length;   
-    unsigned int volumeFree;  // volume of free nodes
+    octoNodeSetItem_t setData[NODE_SET_SIZE]; // data set
+    setIndex_t freeQueueEntry;                // first free item index
+    setIndex_t fullQueueEntry;                // first full item index
+    short numOccupied;                        // number of occupied nodes
+    short numFree;                            // number of free nodes
+    short length;
+    unsigned int volumeFree;     // volume of free nodes
     unsigned int volumeOccupied; // volume of occupied nodes
 } octoNodeSet_t;
 
 // OctoTree
 typedef struct
 {
-    coordinate_t center;     // the coordinate of the center --- (x,y,z): tuple
-    coordinate_t origin;     // the origin coordinate of this tree --- (x,y,z): tuple
-    uint8_t resolution;      // resolution of the tree
-    uint8_t maxDepth;        // max depth of the tree
-    uint16_t width;          // width of the tree
-    octoNode_t *root;        // root node of the tree
+    coordinate_t center; // the coordinate of the center --- (x,y,z): tuple
+    coordinate_t origin; // the origin coordinate of this tree --- (x,y,z): tuple
+    uint8_t resolution;  // resolution of the tree
+    uint8_t maxDepth;    // max depth of the tree
+    uint16_t width;      // width of the tree
+    octoNode_t *root;    // root node of the tree
 } octoTree_t;
 
 // OctoMap
@@ -101,5 +101,5 @@ typedef struct
 } octoMap_t;
 
 void octoMapInit(octoMap_t *octoMap);
-void recursiveExportOctoMap(octoMap_t* octoMap, octoNode_t* node, coordinate_t origin, uint16_t width, FILE* f_octoMap);
+void recursiveExportOctoMap(octoMap_t *octoMap, octoNode_t *node, coordinate_t origin, uint16_t width, FILE *f_octoMap);
 #endif
