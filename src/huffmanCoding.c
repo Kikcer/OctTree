@@ -2,8 +2,10 @@
 # include <stdio.h>
 # include <stdint.h>
 # include <string.h>
+# include <time.h>
 # define NOTE 65535 // 即相当于欧学长代码中的0xffff
 # define INF 0x3f3f3f3f
+# define DATA_SIZE 1024
 
 // 内部记录字符编码
 typedef struct
@@ -61,11 +63,11 @@ void buildHuffmanTree(dict_t* oldDict, HuffmanTree* tree)
             tree->size++;
         }
     }
-    for(int i=0;i<tree->size;i++)
-    {
-        printf("字符：%d, 统计：%d",tree->nodes[i].value,tree->nodes[i].times);
-        printf("\n");
-    }
+    // for(int i=0;i<tree->size;i++)
+    // {
+    //     printf("字符：%d, 统计：%d",tree->nodes[i].value,tree->nodes[i].times);
+    //     printf("\n");
+    // }
     printf("\n");
     // 原始字典大小--ori_num
     int ori_num = tree->size;
@@ -185,22 +187,30 @@ void huffmanEncode(uint8_t* data, uint16_t dataLength, uint8_t* result, HuffmanT
     *resultBitSize = bitPos; // 返回总位数（非字节数）
 }
 
+// 随机生成测试数据
+uint8_t data[DATA_SIZE];
+uint16_t dataLength=DATA_SIZE;
+void generate_input() {
+    srand(time(0));
+    for (int i = 0; i < DATA_SIZE; i++) {
+        data[i] = (rand() % 256);
+    }
+}
+
 // 测试
 int main()
 {
-// // 测试一
-//     // 输入数据: 1出现1次，2出现1次，3出现1次，4出现1次，5出现1次
-//     // 编码结果: 001100111110
-//     /** 哈夫曼树:
-//      *      __
-//      *   __    __
-//      *  3  4  5  __
-//      *          1  2
-//      * 字符编码: 1:110  2:111  3:00  4:01  5:10
-//      */
-//     uint8_t data[] = { 3, 1, 4, 2, 5};
-//     uint16_t dataLength=5; // data中的数据长度
-
+// 测试一
+     // 输入数据: 1出现1次，2出现1次，3出现1次，4出现1次，5出现1次
+     // 编码结果: 001100111110
+     /** 哈夫曼树:
+      *      __
+      *   __    __
+      *  3  4  5  __
+      *          1  2
+      * 字符编码: 1:110  2:111  3:00  4:01  5:10
+       */
+      
 // 测试二
     // 输入数据: 1出现2次，2出现1次，3出现3次，4出现1次，5出现2次
     // 输出结果: 11001011000100110111
@@ -213,14 +223,19 @@ int main()
      *       2  4
      * 字符编码: 1:00  2:100  3:11  4:101  5:01
     */
-    uint8_t data[] = { 3, 1, 4, 2, 5, 1, 3, 5, 3};
-    uint16_t dataLength=9; // data中的数据长度
-
+    // uint8_t data[] = { 3, 1, 4, 2, 5, 1, 3, 5, 3};
+    // uint16_t dataLength=9; // data中的数据长度
+    // 测试压缩率
+    generate_input(); 
+    for(int i=0;i<DATA_SIZE;i++)
+    {
+        printf("%d",data[i]);
+    }
     uint8_t result[MAX_DICT_SIZE] = { 0 }; // 存储压缩结果
     HuffmanTree newDict;
     initHuffmanTree(&newDict);
     int result_length = 0;
-    huffmanEncode(data, dataLength, result, &newDict,&result_length);
+    huffmanEncode(data,dataLength,result, &newDict,&result_length);
     // 输出编码结果
     printf("Huffman Encoded Result (in bits): ");
     for (int i = 0; i < result_length; i++)
