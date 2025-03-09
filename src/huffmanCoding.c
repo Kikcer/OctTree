@@ -7,7 +7,7 @@
 # define NOTE 65535 // 即相当于欧学长代码中的0xffff
 # define INF 0x3f3f3f3f
 
-// 内部记录字符编码
+// 字符编码记录表
 typedef struct
 {
     uint8_t code[MAX_DICT_SIZE][MAX_DICT_SIZE]; // 每个字符的编码
@@ -167,50 +167,119 @@ void huffmanEncode(uint8_t* data, uint16_t dataLength, uint8_t* result, HuffmanT
     generateCodes(newDict, &table, newDict->root, tempCode, 0);
     // 压缩数据
     int bitPos = 0; // 记录压缩结果中已使用的位数
-    memset(result, 0, MAX_DICT_SIZE); // 清空结果数组
+    memset(result, 0, DATA_SIZE); // 清空结果数组
     for (int i = 0; i < dataLength; i++) // 遍历输入数据
     {
         int index = data[i]; // 获取字典索引
         if (index > MAX_DICT_SIZE) continue;
-        printf("字符 '%d' 的编码是: ", data[i]); // 输出当前字符
+        // printf("字符 '%d' 的编码是: ", data[i]); // 输出当前字符
         for (int j = 0; j < table.length[index]; j++) // 遍历当前符号的编码
         {
             if (table.code[index][j] == 1)
                 result[bitPos / 8] |= (1 << (7 - (bitPos % 8))); // 设置结果中的相应位
             // 输出编码位（每个符号的编码）
-            printf("%d", table.code[index][j]); 
+            // printf("%d", table.code[index][j]); 
             bitPos++;
         }
-        printf("\n"); // 换行
+        // printf("\n"); // 换行
     }
     *resultBitSize = bitPos; // 返回总位数（非字节数）
 }
 
+// 哈夫曼解压缩
+int huffmanDecode(uint8_t* data, uint16_t dataLength, HuffmanTree* tree, uint8_t* result, uint16_t maxOutputSize)
+{
+    uint16_t outputIndex = 0; // 输出数据的索引
+    uint16_t bitPos = 0;      // 当前处理的位位置
+    uint16_t node = tree->root; // 从哈夫曼树的根节点开始
+
+    // 逐位读取压缩数据
+    while (bitPos < dataLength) {
+        // 读取当前位
+        uint8_t bit = (data[bitPos / 8] >> (7 - (bitPos % 8))) & 1;
+        bitPos++;
+
+        // 根据位值遍历哈夫曼树
+        if (bit == 0) {
+            node = tree->nodes[node].left; // 左子树
+        }
+        else {
+            node = tree->nodes[node].right; // 右子树
+        }
+
+        // 如果是叶子节点，输出对应的字符
+        if (tree->nodes[node].left == NOTE && tree->nodes[node].right == NOTE) {
+            if (outputIndex >= maxOutputSize) {
+                return outputIndex; // 输出缓冲区不足
+            }
+            result[outputIndex++] = tree->nodes[node].value; // 存储解码结果
+            node = tree->root; // 回到根节点，继续解码下一个字符
+        }
+    }
+    return outputIndex; // 返回解码后的数据长度
+}
+
+// 将原始数据与编码数据写入文件
+void writeIntoData(uint8_t* data, uint8_t* result, int result_length, uint8_t* decodedData, int decodedLength)
+{
+    // 打开文件
+    FILE *outputFile = fopen("huffman_result.txt", "w");
+    if (outputFile == NULL) 
+    {
+        printf("Error opening file!\n");
+        return ;
+    }
+    // 写入原始数据
+    fprintf(outputFile, "Original Data: ");
+    for (int i = 0; i < DATA_SIZE; i++) 
+    {
+        fprintf(outputFile, "%d ", data[i]);
+    }
+    fprintf(outputFile, "\n");
+    // 写入哈夫曼编码结果
+    fprintf(outputFile, "Huffman Encoded Result (in bits): ");
+    for (int i = 0; i < result_length; i++) 
+    {
+        fprintf(outputFile, "%d", (result[i / 8] >> (7 - (i % 8))) & 1);// 逐位输出编码结果
+    }
+    fprintf(outputFile, "\n");
+    // 输出解码结果
+    fprintf(outputFile,"Decoded Data: ");
+    for (int i = 0; i < decodedLength; i++) 
+    {
+        fprintf(outputFile,"%d ", decodedData[i]); // 以字符形式输出(修改为以%d形式输出)
+    }
+    printf("\n");
+    // 关闭文件
+    fclose(outputFile);
+}
+
 int main()
 {
-    // 随机生成测试数据
+// *******随机生成测试数据*******
     uint8_t data[DATA_SIZE];
     uint16_t dataLength=DATA_SIZE;
     srand(time(NULL));  // 初始化随机数种子
-    // 压缩率测试
+    
+// *******压缩率测试*******
     generate_input_Nonuniformity(data); 
-    for(int i=0;i<DATA_SIZE;i++)
-    {
-        printf("%d",data[i]);
-    }
     uint8_t result[DATA_SIZE] = { 0 }; // 存储压缩结果(由于可能导致数组越界，result大小修改为DATA_SIZE)
     HuffmanTree newDict;
     initHuffmanTree(&newDict);
     int result_length = 0;
     huffmanEncode(data,dataLength,result, &newDict,&result_length);
-    // 输出编码结果
-    printf("Huffman Encoded Result (in bits): ");
-    for (int i = 0; i < result_length; i++)
-    {
-        // 逐位输出编码结果
-        printf("%d", (result[i / 8] >> (7 - (i % 8))) & 1);
-    }
-    printf("\n");
+
+    // 输出编码位数
     printf("Total bits used: %d\n", result_length);
+    printf("Huffman coding compression ratio: %f\n",(double)result_length/(DATA_SIZE*8));
+
+// *******解压缩部分*******
+    uint8_t decodedData[MAX_DICT_SIZE] = { 0 }; // 存储解码结果
+    int decodedLength = huffmanDecode(result, result_length, &newDict, decodedData, MAX_DICT_SIZE);
+
+    // 解码数据与原始数据对比
+    if (memcmp(data, decodedData, dataLength) == 0) printf("Decoding successful!\n");
+    else printf("Decoding failed!\n");
+    writeIntoData(data,result,result_length,decodedData,decodedLength);
     return 0;
 }
