@@ -1,11 +1,11 @@
 # include "octoMapSerializer_srtp.h"
+# include "randomNum_tool.h"
 # include <stdio.h>
 # include <stdint.h>
 # include <string.h>
 # include <time.h>
 # define NOTE 65535 // 即相当于欧学长代码中的0xffff
 # define INF 0x3f3f3f3f
-# define DATA_SIZE 1024
 
 // 内部记录字符编码
 typedef struct
@@ -151,8 +151,8 @@ void huffmanEncode(uint8_t* data, uint16_t dataLength, uint8_t* result, HuffmanT
 /** 
  * data 为待传输数据;
  * resultBitSize 用于返回 result 报文的长度;
- * oldDict--dict_t类型 ; newDict--HuffmanTree类型;
- * 由于若将newDict为dict，则将导致数组的大量空白，空间利用率较低！
+ * oldDict--dict_t类型(先进行数据的统计) ; newDict--HuffmanTree类型;
+ * 由于若将newDict为dict，将导致数组的大量空白，空间利用率较低！
 */
 {
     // 从data中统计出oldDict:对每一段数据，均进行哈夫曼的编码！
@@ -177,7 +177,6 @@ void huffmanEncode(uint8_t* data, uint16_t dataLength, uint8_t* result, HuffmanT
         {
             if (table.code[index][j] == 1)
                 result[bitPos / 8] |= (1 << (7 - (bitPos % 8))); // 设置结果中的相应位
-            
             // 输出编码位（每个符号的编码）
             printf("%d", table.code[index][j]); 
             bitPos++;
@@ -187,51 +186,19 @@ void huffmanEncode(uint8_t* data, uint16_t dataLength, uint8_t* result, HuffmanT
     *resultBitSize = bitPos; // 返回总位数（非字节数）
 }
 
-// 随机生成测试数据
-uint8_t data[DATA_SIZE];
-uint16_t dataLength=DATA_SIZE;
-void generate_input() {
-    srand(time(0));
-    for (int i = 0; i < DATA_SIZE; i++) {
-        data[i] = (rand() % 256);
-    }
-}
-
-// 测试
 int main()
 {
-// 测试一
-     // 输入数据: 1出现1次，2出现1次，3出现1次，4出现1次，5出现1次
-     // 编码结果: 001100111110
-     /** 哈夫曼树:
-      *      __
-      *   __    __
-      *  3  4  5  __
-      *          1  2
-      * 字符编码: 1:110  2:111  3:00  4:01  5:10
-       */
-      
-// 测试二
-    // 输入数据: 1出现2次，2出现1次，3出现3次，4出现1次，5出现2次
-    // 输出结果: 11001011000100110111
-    /** 哈夫曼树:
-     *      __
-     *     
-     *   __    __
-     *  1  5     3  
-     *        __
-     *       2  4
-     * 字符编码: 1:00  2:100  3:11  4:101  5:01
-    */
-    // uint8_t data[] = { 3, 1, 4, 2, 5, 1, 3, 5, 3};
-    // uint16_t dataLength=9; // data中的数据长度
-    // 测试压缩率
-    generate_input(); 
+    // 随机生成测试数据
+    uint8_t data[DATA_SIZE];
+    uint16_t dataLength=DATA_SIZE;
+    srand(time(NULL));  // 初始化随机数种子
+    // 压缩率测试
+    generate_input_Nonuniformity(data); 
     for(int i=0;i<DATA_SIZE;i++)
     {
         printf("%d",data[i]);
     }
-    uint8_t result[MAX_DICT_SIZE] = { 0 }; // 存储压缩结果
+    uint8_t result[DATA_SIZE] = { 0 }; // 存储压缩结果(由于可能导致数组越界，result大小修改为DATA_SIZE)
     HuffmanTree newDict;
     initHuffmanTree(&newDict);
     int result_length = 0;
