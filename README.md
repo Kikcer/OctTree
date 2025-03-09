@@ -7,7 +7,7 @@
   <img src="https://github.com/user-attachments/assets/7673ddc6-a56c-4833-8fcb-a74eb80771d0" width="400" />
 
 ### 2025/3/9  
-  反序列化测试成功，将DATA_SIZE为10000的uint8_t数组作为原始数据进行测试：  
+  输入数据DATA_SIZE小于8825时，反序列化测试成功，将DATA_SIZE为10000的uint8_t数组作为原始数据大致测试如下(非均匀(1))：  
         + 随机均匀数据上，哈夫曼编码的压缩率约为 99.99%  
         + 随机非均匀数据上(10%的数据权值更高 randomNum.c )，哈夫曼编码的压缩率约为 92.14%  
         + ......  
