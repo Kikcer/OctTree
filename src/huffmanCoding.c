@@ -4,6 +4,7 @@
 # include <stdint.h>
 # include <string.h>
 # include <time.h>
+# include <windows.h>
 # define NOTE 65535 // 即相当于欧学长代码中的0xffff
 # define INF 0x3f3f3f3f
 
@@ -127,7 +128,7 @@ void initDict(dict_t *dict)
 }
 
 // 工具:利用data来构建字典
-void fillDictFromData(uint8_t* data, uint16_t dataLength, dict_t* oldDict)
+void fillDictFromData(uint8_t* data, int dataLength, dict_t* oldDict)
 {
     initDict(oldDict); // 初始化字典
     for(int i=0;i<dataLength;i++)
@@ -147,7 +148,7 @@ void fillDictFromData(uint8_t* data, uint16_t dataLength, dict_t* oldDict)
 }
 
 // 哈夫曼树报文编码
-void huffmanEncode(uint8_t* data, uint16_t dataLength, uint8_t* result, HuffmanTree* newDict, int* resultBitSize)
+void huffmanEncode(uint8_t* data, int dataLength, uint8_t* result, HuffmanTree* newDict, int* resultBitSize)
 /** 
  * data 为待传输数据;
  * resultBitSize 用于返回 result 报文的长度;
@@ -187,9 +188,9 @@ void huffmanEncode(uint8_t* data, uint16_t dataLength, uint8_t* result, HuffmanT
 }
 
 // 哈夫曼解压缩
-int huffmanDecode(uint8_t* data, uint16_t dataLength, HuffmanTree* tree, uint8_t* result, uint16_t maxOutputSize)
+int huffmanDecode(uint8_t* data, int dataLength, HuffmanTree* tree, uint8_t* result, int maxOutputSize)
 {
-    uint16_t outputIndex = 0; // 输出数据的索引
+    int outputIndex = 0; // 输出数据的索引
     uint16_t bitPos = 0;      // 当前处理的位位置
     uint16_t node = tree->root; // 从哈夫曼树的根节点开始
 
@@ -258,28 +259,55 @@ int main()
 {
 // *******随机生成测试数据*******
     uint8_t data[DATA_SIZE];
-    uint16_t dataLength=DATA_SIZE;
+    int dataLength=DATA_SIZE;
     srand(time(NULL));  // 初始化随机数种子
-    
+
 // *******压缩率测试*******
+    FILETIME start, end;
+    GetSystemTimeAsFileTime(&start);
     generate_input_Nonuniformity(data); 
     uint8_t result[DATA_SIZE] = { 0 }; // 存储压缩结果(由于可能导致数组越界，result大小修改为DATA_SIZE)
     HuffmanTree newDict;
     initHuffmanTree(&newDict);
     int result_length = 0;
     huffmanEncode(data,dataLength,result, &newDict,&result_length);
-
+    GetSystemTimeAsFileTime(&end);
+    // 将FILETIME转换为64位整数（单位：100纳秒）
+    ULARGE_INTEGER start_encode, end_encode;
+    start_encode.LowPart = start.dwLowDateTime;
+    start_encode.HighPart = start.dwHighDateTime;
+    end_encode.LowPart = end.dwLowDateTime;
+    end_encode.HighPart = end.dwHighDateTime;
     // 输出编码位数
+    double time_spent = (end_encode.QuadPart - start_encode.QuadPart) / 1e4;
+    printf("压缩时间：%.6f毫秒\n",time_spent);
     printf("Total bits used: %d\n", result_length);
     printf("Huffman coding compression ratio: %f\n",(double)result_length/(DATA_SIZE*8));
 
 // *******解压缩部分*******
-    uint8_t decodedData[MAX_DICT_SIZE] = { 0 }; // 存储解码结果
-    int decodedLength = huffmanDecode(result, result_length, &newDict, decodedData, MAX_DICT_SIZE);
+    FILETIME start_, end_;
+    GetSystemTimeAsFileTime(&start_);
+    uint8_t decodedData[DATA_SIZE] = { 0 }; // 存储解码结果
+    int decodedLength = huffmanDecode(result, result_length, &newDict, decodedData, DATA_SIZE);
+    GetSystemTimeAsFileTime(&end_);
 
     // 解码数据与原始数据对比
-    if (memcmp(data, decodedData, dataLength) == 0) printf("Decoding successful!\n");
-    else printf("Decoding failed!\n");
+    ULARGE_INTEGER start_decode, end_decode;
+    start_decode.LowPart = start_.dwLowDateTime;
+    start_decode.HighPart = start_.dwHighDateTime;
+    end_decode.LowPart = end_.dwLowDateTime;
+    end_decode.HighPart = end_.dwHighDateTime;
+    // 输出编码位数
+    time_spent = (end_decode.QuadPart - start_decode.QuadPart) / 1e4;
+    printf("解压缩时间：%.6f 毫秒\n",time_spent);
+    if (memcmp(data, decodedData, dataLength) == 0) 
+    {
+        printf("Decoding successful!\n");
+    }
+    else 
+    {
+        printf("Decoding failed!\n");
+    }
     writeIntoData(data,result,result_length,decodedData,decodedLength);
     return 0;
 }

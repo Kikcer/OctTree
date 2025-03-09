@@ -55,11 +55,11 @@ void compressData(uint8_t *data, uint8_t *result);
 
 // 解压缩数据 @张玮东
 void decompressData(uint8_t *data, uint8_t *result, dict_t *dict);
-int huffmanDecode(uint8_t* data, uint16_t dataLength, HuffmanTree* tree, uint8_t* result, uint16_t maxOutputSize);
+int huffmanDecode(uint8_t* data, int dataLength, HuffmanTree* tree, uint8_t* result, int maxOutputSize);
 
 // LZW编码 @董乐天
 void encodeData(uint8_t *data, uint8_t *result, dict_t *dict);
 
 // 哈夫曼编码 @李宾
-void huffmanEncode(uint8_t* data, uint16_t dataLength, uint8_t* result, HuffmanTree* newDict, int* resultBitSize); // 哈夫曼编码调用函数
+void huffmanEncode(uint8_t* data, int dataLength, uint8_t* result, HuffmanTree* newDict, int* resultBitSize); // 哈夫曼编码调用函数
 #endif
